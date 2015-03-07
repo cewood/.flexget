@@ -1,0 +1,5 @@
+*.log*
+*.sqlite*
+*.swp
+flexget-private
+received

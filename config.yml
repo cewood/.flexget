@@ -1,0 +1,171 @@
+# Flexget (http://www.flexget.com) configuration file.
+#
+# References:
+#  - http://flexget.com/wiki/Cookbook/Movies/discoverfeed
+#  - http://flexget.com/wiki/Cookbook/Movies/TraktList
+#  - http://flexget.com/wiki/Cookbook/Users/AlexTz
+#
+
+secrets: flexget-private/secretfile.yml
+
+templates:
+
+  global:
+    email:
+      from: '{{ secrets.email.from }}'
+      to: '{{ secrets.email.to }}'
+      smtp_host: localhost
+      smtp_tls: no
+      smtp_ssl: no
+
+    # Remove completed items from Transmission
+    clean_transmission:
+      min_ratio: 1
+      transmission_seed_limits: yes
+
+    # Require some minimum number of seeds for any torrent
+    torrent_alive:
+      min_seeds: 10
+      reject_for: 1 hours
+
+    # Filter by filenames. Allow multiple video types and rar packs (but note if there is just a
+    # single .rar file it won't be accepted)
+    content_filter:
+      require:
+        - '*.avi'
+        - '*.mkv'
+        - '*.mpg'
+        - '*.mp4'
+        - '*.r0*'
+        - '*.part0*'
+      reject:
+        - 'password.txt'
+        - '*.wmv'
+
+    quality:
+      - "!bdscr"
+      - "!dvdscr"
+      - "!r5"
+      - "!tc"
+      - "!ts"
+      - "!cam"
+      - "!workprint"
+      - "!dd5.1"
+      - "!mp3"
+
+    # Rate limit requests to these domains, so we don't get blocked!
+    domain_delay:
+      bt-chat.com: 5 seconds
+      torrentz.eu: 5 seconds
+      thepiratebay.se: 5 seconds
+
+
+  input-global-tv:
+    include: flexget-private/input-global-tv.yml
+
+
+  filter-global-tv:
+    # Impose reasonable size constraints
+    content_size:
+      max: 1500
+      min: 150
+
+    quality:
+      - 480p-720p
+      - hdtv+
+      - xvid+
+
+
+  input-global-movies:
+    interval: 2 hours
+    include: flexget-private/input-global-movies.yml
+
+
+  filter-global-movies:
+    # Impose reasonable size constraints
+    content_size:
+      max: 15000
+      min: 700
+
+    # Download propers, since they will have the same content_filename,
+    # lower/non-propers will be overwritten
+    proper_movies: yes
+
+    quality:
+      - 480p-720p
+      - webdl+
+      - xvid-h264
+
+
+
+
+
+# This is where the magic happens
+tasks:
+  trakt-set-series-begin:
+    manual: yes  # You probably don't need to run this all the time, so you can launch it explicitly with the --tasks flag
+    trakt_emit:
+      username: '{{ secrets.trakt.username }}'
+      password: '{{ secrets.trakt.password }}'
+      context: collected
+      list: watchlist
+      position: next
+    accept_all: yes
+    set_series_begin: yes
+
+
+  # This task queues all of the TV series in my Trakt.tv series watchlist
+  trakt-watchlist-series:
+    priority: 100
+    configure_series:
+      from:
+        trakt_list:
+          username: '{{ secrets.trakt.username }}'
+          password: '{{ secrets.trakt.password }}'
+          list: watchlist
+          type: shows
+      settings:
+        propers: yes
+    trakt_add:
+      username: '{{ secrets.trakt.username }}'
+      password: '{{ secrets.trakt.password }}'
+      list: collection
+    template:
+      - input-global-tv
+      - filter-global-tv
+    transmission:
+      path: '{{ secrets.transmission.path_tv }}'
+
+
+  # This task queues all of the Movies in my Trakt.tv movies watchlist
+  trakt-watchlist-movies:
+    priority: 110
+    interval: 2 hours
+    trakt_list:
+      username: '{{ secrets.trakt.username }}'
+      password: '{{ secrets.trakt.password }}'
+      type: movies
+      list: watchlist
+    accept_all: yes
+    imdb_lookup: yes
+    seen: local
+    movie_queue: add
+    template: no_global
+
+
+  # This task checks the movie_queue and adds matching items to Deluge for downloading
+  movies-queue:
+    priority: 120
+    interval: 2 hours
+    trakt_remove:
+      username: '{{ secrets.trakt.username }}'
+      password: '{{ secrets.trakt.password }}'
+      list: watchlist
+    template:
+      - input-global-movies
+      - filter-global-movies
+    movie_queue: add
+    seen_movies: loose
+    transmission:
+      path: '{{ secrets.transmission.path_movies }}'
+
