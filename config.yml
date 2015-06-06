@@ -71,9 +71,10 @@ templates:
       min: 150
 
     quality:
-      - 480p-720p
-      - hdtv+
-      - xvid+
+      - "<=720p hdtv+ xvid+"
+      # - 480p-720p
+      # - hdtv+
+      # - xvid+
 
 
   input-global-movies:
