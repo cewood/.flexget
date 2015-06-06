@@ -18,10 +18,10 @@ templates:
       smtp_tls: no
       smtp_ssl: no
 
-    # Remove completed items from Transmission
-    clean_transmission:
-      min_ratio: 1
-      transmission_seed_limits: yes
+    # # Remove completed items from Transmission
+    # clean_transmission:
+    #   min_ratio: 1
+    #   transmission_seed_limits: yes
 
     # Require some minimum number of seeds for any torrent
     torrent_alive:
