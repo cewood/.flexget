@@ -76,6 +76,16 @@ templates:
       # - hdtv+
       # - xvid+
 
+    # Lets avoid some common foreign releases
+    regexp:
+      reject:
+        - esp(anol)?
+        - ger(man)?
+        - ita(lian)?
+        - spa(nish)?
+        - swe(den)?
+      from: title
+
 
   input-global-movies:
     interval: 2 hours
